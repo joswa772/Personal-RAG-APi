@@ -27,6 +27,9 @@ from PIL import Image, ImageDraw, ImageFont
 import json
 import time
 import hashlib
+from langchain.embeddings import HuggingFaceEmbeddings
+from langchain.vectorstores import Chroma
+import re
 
 # Download required NLTK resources
 try:
@@ -54,6 +57,19 @@ STABLE_DIFFUSION_API_KEY = "sk-j6vcnrD7PvJNOxJXcrrg7QxA7aHHgsVr13DiXtrOAuV81hxt"
 # ============================================================================
 # TEXT PROCESSING FUNCTIONS
 # ============================================================================
+def answer_question_chroma(question, use_llama3=False):
+    """Answer question using ChromaDB vector search"""
+    try:
+        embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+        db = Chroma(persist_directory="chroma_db", embedding_function=embeddings)
+        results = db.similarity_search(question, k=3)
+        context = "\n\n".join([doc.page_content for doc in results])
+
+        if use_llama3:
+            return ask_llama3(context, question)
+        return context  # Extractive fallback
+    except Exception as e:
+        return f"Error using ChromaDB: {e}"
 
 def clean_text(text):
     """Clean and preprocess text using NLTK"""
@@ -295,39 +311,43 @@ def create_placeholder_image(prompt, filename):
         return None
 
 def generate_and_save_image(prompt, use_stable_diffusion=False, api_key="", model="llava"):
-    """Generate an image and save it to a file"""
+    """Generate an image and save it to a file in the 'download-image/generated_images' folder"""
     global GENERATED_IMAGES
     try:
-        # Create unique filename
+        # Ensure the download-image/generated_images directory exists
+        images_dir = os.path.join("download-image", "generated_images")
+        os.makedirs(images_dir, exist_ok=True)
+        # Create unique, safe filename
         timestamp = int(time.time())
+        # Remove any unsafe characters from prompt for filename
+        safe_prompt = re.sub(r'[^a-zA-Z0-9_\-]', '_', prompt)[:30]
         filename = f"generated_image_{timestamp}_{hash(prompt) % 10000}.png"
+        filepath = os.path.join(images_dir, filename)
         
         if use_stable_diffusion:
             image_data = generate_image_stable_diffusion(prompt, api_key)
             if isinstance(image_data, str) and image_data.startswith("Error"):
                 return None, image_data
-            
             # Save the image
-            with open(filename, "wb") as f:
+            with open(filepath, "wb") as f:
                 f.write(image_data)
-            GENERATED_IMAGES.append(filename)
-            return filename, "Image generated successfully using Stable Diffusion!"
+            GENERATED_IMAGES.append(filepath)
+            return filepath, "Image generated successfully using Stable Diffusion!"
         else:
             # For Ollama-based generation
             result = generate_image_ollama(prompt, model)
             if result.startswith("Error"):
                 return None, result
-            
             # Create placeholder image
-            saved_file = create_placeholder_image(prompt, filename)
+            saved_file = create_placeholder_image(prompt, filepath)
             if saved_file:
-                GENERATED_IMAGES.append(filename)
-                return filename, f"Image generated using Ollama: {result}"
+                GENERATED_IMAGES.append(filepath)
+                return filepath, f"Image generated using Ollama: {result}"
             else:
                 return None, "Failed to create image file"
-            
     except Exception as e:
-        return None, f"Error generating image: {e}"
+        print(f"Error generating and saving image: {e}")
+        return None, f"Error: {e}"
 
 def generate_image_from_pdf_context(question, use_stable_diffusion=False, api_key=""):
     """Generate image based on PDF content and question"""
