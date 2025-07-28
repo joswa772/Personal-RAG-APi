@@ -30,17 +30,6 @@ import hashlib
 from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.vectorstores import Chroma
 import re
-from dotenv import load_dotenv
-
-# Download required NLTK resources
-try:
-    nltk.download("punkt", quiet=True)
-    nltk.download("stopwords", quiet=True)
-except:
-    print("Warning: Could not download NLTK resources. Some features may not work.")
-
-# Load environment variables from .env file
-load_dotenv()
 
 # Global variables
 CLEANED_TEXT = ""
@@ -55,12 +44,6 @@ GENERATED_IMAGES = []
 # Replace "sk-your-api-key-here" with your actual Stability AI API key
 # Get your API key from: https://platform.stability.ai/
 STABLE_DIFFUSION_API_KEY = os.getenv("STABLE_DIFFUSION_API_KEY")
-
-# Hugging Face API key (optional, for higher rate limits)
-# Get your free API key from: https://huggingface.co/settings/tokens
-HUGGINGFACE_API_KEY = os.getenv("REMOVED_TOKENcrGqfPOzpxTvbOCzgTogEecwyKLJoyWJMM") # Replace with your actual API key
-
-# Ollama host configuration
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 # ============================================================================
 
@@ -284,99 +267,11 @@ def generate_image_stable_diffusion(prompt, api_key=None):
     except Exception as e:
         return f"Error: {e}"
 
-def generate_image_huggingface(prompt, model="stable-diffusion"):
-    """Generate image using Hugging Face's free inference API or fallback to enhanced placeholder"""
+def create_placeholder_image(prompt, filename):
+    """Create a placeholder image with text"""
     try:
-        # Try to use Hugging Face API first
-        if HUGGINGFACE_API_KEY and HUGGINGFACE_API_KEY.strip() and HUGGINGFACE_API_KEY != "":
-            # Choose reliable models that work with the API
-            models = {
-                "stable-diffusion": "runwayml/stable-diffusion-v1-5",
-                "openjourney": "prompthero/openjourney",
-                "dreamlike": "dreamlike-art/dreamlike-photoreal-2.0",
-                "anything": "andite/anything-v4.0",
-                "sdxl": "stabilityai/stable-diffusion-xl-base-1.0"
-            }
-            
-            # Use the specified model or default
-            model_name = models.get(model, model)
-            
-            # API endpoint
-            api_url = f"https://api-inference.huggingface.co/models/{model_name}"
-            
-            # Headers with API key
-            headers = {"Content-Type": "application/json"}
-            headers["Authorization"] = f"Bearer {HUGGINGFACE_API_KEY}"
-            
-            # Request payload
-            payload = {
-                "inputs": prompt,
-                "parameters": {
-                    "num_inference_steps": 30,
-                    "guidance_scale": 7.5,
-                    "width": 512,
-                    "height": 512
-                }
-            }
-            
-            # Try multiple models if one fails
-            models_to_try = [model_name]
-            if model_name != "runwayml/stable-diffusion-v1-5":
-                models_to_try.append("runwayml/stable-diffusion-v1-5")
-            
-            for try_model in models_to_try:
-                try:
-                    print(f"Trying model: {try_model}")
-                    api_url = f"https://api-inference.huggingface.co/models/{try_model}"
-                    response = requests.post(api_url, headers=headers, json=payload, timeout=60)
-                    
-                    if response.status_code == 200:
-                        # Return the image data
-                        return response.content
-                    elif response.status_code == 503:
-                        # Model is loading, wait and retry
-                        print(f"Model {try_model} is loading, waiting...")
-                        time.sleep(10)
-                        response = requests.post(api_url, headers=headers, json=payload, timeout=60)
-                        if response.status_code == 200:
-                            return response.content
-                        else:
-                            print(f"Model {try_model} failed after retry: {response.status_code}")
-                            continue
-                    elif response.status_code == 404:
-                        print(f"Model {try_model} not found, trying next...")
-                        continue
-                    else:
-                        print(f"Model {try_model} error: {response.status_code} - {response.text}")
-                        continue
-                except Exception as e:
-                    print(f"Exception with model {try_model}: {e}")
-                    continue
-            
-            return f"Error: All models failed. Please check your API key and try again."
-        else:
-            # No API key, return None to trigger fallback
-            return None
-            
-    except Exception as e:
-        return f"Error: {e}"
-
-def create_enhanced_placeholder_image(prompt, filename):
-    """Create an enhanced placeholder image with gradient background and better styling"""
-    try:
-        # Create a larger image with gradient background
-        width, height = 512, 512
-        img = Image.new('RGB', (width, height), color='white')
+        img = Image.new('RGB', (512, 512), color='lightblue')
         draw = ImageDraw.Draw(img)
-        
-        # Create a gradient background
-        for y in range(height):
-            # Create a gradient from top to bottom
-            r = int(100 + (y / height) * 100)  # Blue to purple gradient
-            g = int(150 + (y / height) * 50)
-            b = int(200 + (y / height) * 55)
-            for x in range(width):
-                draw.point((x, y), fill=(r, g, b))
         
         # Try to use a default font
         try:
@@ -384,63 +279,31 @@ def create_enhanced_placeholder_image(prompt, filename):
         except:
             font = None
         
-        # Create a semi-transparent overlay for text
-        overlay = Image.new('RGBA', (width, height), (255, 255, 255, 180))
-        img = Image.alpha_composite(img.convert('RGBA'), overlay).convert('RGB')
-        draw = ImageDraw.Draw(img)
-        
         # Wrap text to fit in image
         words = prompt.split()
         lines = []
         current_line = []
-        max_words_per_line = 6
-        
         for word in words:
             current_line.append(word)
-            if len(current_line) >= max_words_per_line:
+            if len(current_line) >= 8:
                 lines.append(' '.join(current_line))
                 current_line = []
         if current_line:
             lines.append(' '.join(current_line))
         
-        # Limit to 8 lines maximum
-        lines = lines[:8]
-        
-        # Draw text with shadow effect
-        y_position = 80
-        for i, line in enumerate(lines):
-            # Draw shadow
-            draw.text((22, y_position + 2), line, fill='darkgray', font=font)
-            # Draw main text
+        # Draw text
+        y_position = 50
+        for line in lines[:10]:
             draw.text((20, y_position), line, fill='black', font=font)
-            y_position += 35
-        
-        # Add a decorative border
-        draw.rectangle([10, 10, width-10, height-10], outline='white', width=3)
-        
-        # Add a small icon or symbol based on the prompt
-        if any(word in prompt.lower() for word in ['sun', 'sunset', 'day', 'bright']):
-            # Draw a simple sun
-            draw.ellipse([width-80, 20, width-20, 80], fill='yellow', outline='orange', width=2)
-        elif any(word in prompt.lower() for word in ['moon', 'night', 'dark']):
-            # Draw a simple moon
-            draw.ellipse([width-80, 20, width-20, 80], fill='lightgray', outline='gray', width=2)
-        elif any(word in prompt.lower() for word in ['tree', 'nature', 'forest']):
-            # Draw a simple tree
-            draw.ellipse([width-70, 30, width-30, 70], fill='green', outline='darkgreen', width=2)
-            draw.rectangle([width-45, 70, width-55, 90], fill='brown')
+            y_position += 30
         
         img.save(filename)
         return filename
     except Exception as e:
-        print(f"Error creating enhanced placeholder image: {e}")
+        print(f"Error creating placeholder image: {e}")
         return None
 
-def create_placeholder_image(prompt, filename):
-    """Create a placeholder image with text (legacy function for compatibility)"""
-    return create_enhanced_placeholder_image(prompt, filename)
-
-def generate_and_save_image(prompt, use_stable_diffusion=False, api_key="", model="llava", use_huggingface=False, REMOVED_TOKENmodel="stable-diffusion"):
+def generate_and_save_image(prompt, use_stable_diffusion=False, api_key="", model="llava"):
     """Generate an image and save it to a file in the 'download-image/generated_images' folder"""
     global GENERATED_IMAGES
     try:
@@ -454,25 +317,7 @@ def generate_and_save_image(prompt, use_stable_diffusion=False, api_key="", mode
         filename = f"generated_image_{timestamp}_{hash(prompt) % 10000}.png"
         filepath = os.path.join(images_dir, filename)
         
-        if use_huggingface:
-            # Use Hugging Face free API
-            image_data = generate_image_huggingface(prompt, REMOVED_TOKENmodel)
-            if image_data is None:
-                # No API key, create enhanced placeholder
-                saved_file = create_enhanced_placeholder_image(prompt, filepath)
-                if saved_file:
-                    GENERATED_IMAGES.append(filepath)
-                    return filepath, "Image generated using enhanced placeholder (no API key needed)!"
-                else:
-                    return None, "Failed to create enhanced placeholder image"
-            elif isinstance(image_data, str) and image_data.startswith("Error"):
-                return None, image_data
-            # Save the image
-            with open(filepath, "wb") as f:
-                f.write(image_data)
-            GENERATED_IMAGES.append(filepath)
-            return filepath, f"Image generated successfully using Hugging Face ({REMOVED_TOKENmodel})!"
-        elif use_stable_diffusion:
+        if use_stable_diffusion:
             image_data = generate_image_stable_diffusion(prompt, api_key)
             if isinstance(image_data, str) and image_data.startswith("Error"):
                 return None, image_data
@@ -497,7 +342,7 @@ def generate_and_save_image(prompt, use_stable_diffusion=False, api_key="", mode
         print(f"Error generating and saving image: {e}")
         return None, f"Error: {e}"
 
-def generate_image_from_pdf_context(question, use_stable_diffusion=False, api_key="", use_huggingface=False, REMOVED_TOKENmodel="stable-diffusion"):
+def generate_image_from_pdf_context(question, use_stable_diffusion=False, api_key=""):
     """Generate image based on PDF content and question"""
     global CLEANED_TEXT
     if not CLEANED_TEXT:
@@ -520,7 +365,7 @@ def generate_image_from_pdf_context(question, use_stable_diffusion=False, api_ke
         context = paragraphs[most_relevant_idx]
         # Create a prompt combining the question and context
         prompt = f"{question} based on: {context[:200]}..."
-        return generate_and_save_image(prompt, use_stable_diffusion, api_key, use_huggingface=use_huggingface, REMOVED_TOKENmodel=REMOVED_TOKENmodel)
+        return generate_and_save_image(prompt, use_stable_diffusion, api_key)
     else:
         return None, "No relevant content found in the PDF."
 
@@ -578,17 +423,6 @@ def test_stable_diffusion_api():
     except Exception as e:
         return False, f"❌ Cannot connect to Stable Diffusion API: {e}"
 
-def test_huggingface_api():
-    """Test Hugging Face API connection"""
-    try:
-        result = generate_image_huggingface("test", "stable-diffusion")
-        if isinstance(result, str) and result.startswith("Error"):
-            return False, f"❌ Hugging Face API Error: {result}"
-        else:
-            return True, "✅ Hugging Face API is working"
-    except Exception as e:
-        return False, f"❌ Hugging Face API Error: {e}"
-
 def run_system_tests():
     """Run comprehensive system tests"""
     results = []
@@ -600,10 +434,6 @@ def run_system_tests():
     # Test image generation
     img_ok, img_msg = test_image_generation()
     results.append(img_msg)
-    
-    # Test Hugging Face (free alternative)
-    REMOVED_TOKENok, REMOVED_TOKENmsg = test_huggingface_api()
-    results.append(REMOVED_TOKENmsg)
     
     # Test Stable Diffusion
     sd_ok, sd_msg = test_stable_diffusion_api()
@@ -622,37 +452,19 @@ def process_and_reset(file_path):
     ANSWER_HISTORY = set()
     return output_path, ""
 
-def generate_image_wrapper(prompt, use_sd=False, api_key="", use_hf=False, REMOVED_TOKENmodel="stable-diffusion"):
+def generate_image_wrapper(prompt, use_sd=False, api_key=""):
     """Wrapper for basic image generation"""
     if not prompt.strip():
         return None, "Please enter an image description."
-    filename, status = generate_and_save_image(prompt, use_sd, api_key, use_huggingface=use_hf, REMOVED_TOKENmodel=REMOVED_TOKENmodel)
+    filename, status = generate_and_save_image(prompt, use_sd, api_key)
     return filename, status
 
-def generate_pdf_image_wrapper(question, use_sd=False, api_key="", use_hf=False, REMOVED_TOKENmodel="stable-diffusion"):
+def generate_pdf_image_wrapper(question, use_sd=False, api_key=""):
     """Wrapper for PDF-based image generation"""
     if not question.strip():
         return None, "Please enter a question about the PDF content."
-    # For PDF-based generation, we'll use the same approach but with Hugging Face
-    if use_hf:
-        # Get context from PDF and generate image using Hugging Face
-        global CLEANED_TEXT
-        if not CLEANED_TEXT:
-            return None, "Please upload and process a PDF first."
-        
-        # Create a prompt combining the question and some context
-        paragraphs = [p.strip() for p in CLEANED_TEXT.split('\n\n') if p.strip()]
-        if paragraphs:
-            context = paragraphs[0][:200]  # Use first paragraph as context
-            prompt = f"{question} based on: {context}..."
-        else:
-            prompt = question
-            
-        filename, status = generate_and_save_image(prompt, use_stable_diffusion=False, api_key="", use_huggingface=True, REMOVED_TOKENmodel=REMOVED_TOKENmodel)
-        return filename, status
-    else:
-        filename, status = generate_image_from_pdf_context(question, use_sd, api_key, use_huggingface=use_hf, REMOVED_TOKENmodel=REMOVED_TOKENmodel)
-        return filename, status
+    filename, status = generate_image_from_pdf_context(question, use_sd, api_key)
+    return filename, status
 
 def cleanup_generated_files():
     """Clean up generated image files"""
@@ -717,5 +529,4 @@ def demo_usage():
     print("=" * 60)
 
 if __name__ == "__main__":
-    print("STABLE_DIFFUSION_API_KEY is set:", bool(STABLE_DIFFUSION_API_KEY))
     demo_usage()

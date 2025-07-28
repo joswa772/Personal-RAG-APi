@@ -109,8 +109,7 @@ async function askPdfQuestion(question) {
 async function generateRegularImage(prompt) {
     const formData = new FormData();
     formData.append('prompt', prompt);
-    formData.append('use_stable_diffusion', 'true'); // Using Stable Diffusion (with API key)
-    formData.append('use_huggingface', 'false'); // Not using Hugging Face
+    formData.append('use_stable_diffusion', 'true'); // Defaulting to SD
     const response = await fetch('/generate-image', { method: 'POST', body: formData });
     const result = await response.json();
     if (response.ok && result.image_file) {
@@ -125,8 +124,7 @@ async function generateRegularImage(prompt) {
 async function generatePdfBasedImage(question) {
     const formData = new FormData();
     formData.append('question', question);
-    formData.append('use_stable_diffusion', 'true'); // Using Stable Diffusion (with API key)
-    formData.append('use_huggingface', 'false'); // Not using Hugging Face
+    formData.append('use_stable_diffusion', 'true'); // Defaulting to SD
     const response = await fetch('/generate-pdf-image', { method: 'POST', body: formData });
     const result = await response.json();
     if (response.ok && result.image_file) {

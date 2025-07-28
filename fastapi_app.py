@@ -50,8 +50,8 @@ app.add_middleware(
 UPLOADS_DIR = Path("uploads")
 UPLOADS_DIR.mkdir(exist_ok=True)
 
-# Mount static files with cache busting
-app.mount("/static", StaticFiles(directory="static", check_dir=False), name="static")
+# Mount static files
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # ============================================================================
 # HTML TEMPLATES
@@ -64,7 +64,7 @@ HTML_TEMPLATE = """
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Conversational RAG Interface</title>
-    <link rel="stylesheet" href="/static/style.css?v=3">
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
     <div class="chat-container">
@@ -77,7 +77,7 @@ HTML_TEMPLATE = """
             <button type="submit" class="btn">Send</button>
         </form>
     </div>
-    <script src="/static/app.js?v=3" defer></script>
+    <script src="/static/app.js" defer></script>
 </body>
 </html>
 """
@@ -144,71 +144,33 @@ async def ask_question_endpoint(
 @app.post("/generate-image")
 async def generate_image_endpoint(
     prompt: str = Form(...),
-    use_stable_diffusion: bool = Form(False),
-    use_huggingface: bool = Form(False),
-    REMOVED_TOKENmodel: str = Form("stable-diffusion")
+    use_stable_diffusion: bool = Form(False)
 ):
     """Generate an image from a prompt"""
     try:
-        # Debug logging
-        print(f"DEBUG: Regular Image Generation Request")
-        print(f"  Prompt: {prompt}")
-        print(f"  use_stable_diffusion: {use_stable_diffusion}")
-        print(f"  use_huggingface: {use_huggingface}")
-        print(f"  REMOVED_TOKENmodel: {REMOVED_TOKENmodel}")
-        
-        image_file, status = generate_image_wrapper(
-            prompt, 
-            use_stable_diffusion, 
-            use_hf=use_huggingface, 
-            REMOVED_TOKENmodel=REMOVED_TOKENmodel
-        )
-        
-        print(f"  Result - image_file: {image_file}")
-        print(f"  Result - status: {status}")
-        
+        image_file, status = generate_image_wrapper(prompt, use_stable_diffusion)
         # Only return the base filename
         from pathlib import Path
         if image_file:
             image_file = Path(image_file).name
         return {"image_file": image_file, "status": status}
     except Exception as e:
-        print(f"  ERROR: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/generate-pdf-image")
 async def generate_pdf_image_endpoint(
     question: str = Form(...),
-    use_stable_diffusion: bool = Form(False),
-    use_huggingface: bool = Form(False),
-    REMOVED_TOKENmodel: str = Form("stable-diffusion")
+    use_stable_diffusion: bool = Form(False)
 ):
     """Generate an image based on PDF content and question"""
     try:
-        # Debug logging
-        print(f"DEBUG: PDF Image Generation Request")
-        print(f"  Question: {question}")
-        print(f"  use_stable_diffusion: {use_stable_diffusion}")
-        print(f"  use_huggingface: {use_huggingface}")
-        print(f"  REMOVED_TOKENmodel: {REMOVED_TOKENmodel}")
-        
-        image_file, status = generate_pdf_image_wrapper(
-            question, 
-            use_stable_diffusion, 
-            use_hf=use_huggingface, 
-            REMOVED_TOKENmodel=REMOVED_TOKENmodel
-        )
-        
-        print(f"  Result - image_file: {image_file}")
-        print(f"  Result - status: {status}")
-        
+        image_file, status = generate_pdf_image_wrapper(question, use_stable_diffusion)
         # Only return the base filename
         from pathlib import Path
         if image_file:
             image_file = Path(image_file).name
         return {"image_file": image_file, "status": status}
     except Exception as e:
-        print(f"  ERROR: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/generated_image/{filename}")
@@ -220,25 +182,6 @@ async def download_image(filename: str):
         return FileResponse(file_path, media_type="image/png")
     else:
         raise HTTPException(status_code=404, detail="Image file not found")
-
-@app.get("/debug-image-generation")
-async def debug_image_generation():
-    """Debug endpoint to test image generation directly"""
-    try:
-        from ai import generate_image_wrapper
-        filename, status = generate_image_wrapper(
-            "test image", 
-            use_sd=False, 
-            use_hf=True, 
-            REMOVED_TOKENmodel="stable-diffusion"
-        )
-        return {
-            "filename": filename,
-            "status": status,
-            "test": "Hugging Face image generation test"
-        }
-    except Exception as e:
-        return {"error": str(e), "test": "Debug test failed"}
 
 # ============================================================================
 # MAIN EXECUTION

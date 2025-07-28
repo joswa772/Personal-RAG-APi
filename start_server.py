@@ -99,7 +99,7 @@ def main():
     print("\n🔑 Checking Stable Diffusion API key...")
     try:
         from ai import STABLE_DIFFUSION_API_KEY
-        if STABLE_DIFFUSION_API_KEY and not STABLE_DIFFUSION_API_KEY.startswith("sk-98mf8dZqpjdne5Rgi4Qk25ARjxFhpNNR3rGKYNHgbN0S95CB"):
+        if STABLE_DIFFUSION_API_KEY and len(STABLE_DIFFUSION_API_KEY) > 40:
             print("✅ Stable Diffusion API key is configured")
         else:
             print("⚠️  Stable Diffusion API key not configured (optional)")
