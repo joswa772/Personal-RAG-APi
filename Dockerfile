@@ -20,5 +20,9 @@ RUN mkdir -p /code/uploads /code/download-image/generated_images
 # Expose the port FastAPI will run on
 EXPOSE 8000
 
+
+RUN python -m nltk.downloader punkt
+
+
 # Start the FastAPI app using uvicorn
 CMD ["uvicorn", "fastapi_app:app", "--host", "0.0.0.0", "--port", "8000"]
