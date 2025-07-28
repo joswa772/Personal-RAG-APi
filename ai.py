@@ -31,6 +31,7 @@ from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.vectorstores import Chroma
 import re
 
+nltk.download("punkt")
 # Global variables
 CLEANED_TEXT = ""
 ANSWER_HISTORY = set()
