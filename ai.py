@@ -44,7 +44,7 @@ GENERATED_IMAGES = []
 # Replace "sk-your-api-key-here" with your actual Stability AI API key
 # Get your API key from: https://platform.stability.ai/
 STABLE_DIFFUSION_API_KEY = os.getenv("STABLE_DIFFUSION_API_KEY")
-OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "https://ollama-cloud-production.up.railway.app")
 # ============================================================================
 
 # ============================================================================
