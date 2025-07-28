@@ -23,7 +23,7 @@ def test_huggingface():
         "a cute cat", 
         use_stable_diffusion=False, 
         use_huggingface=True, 
-        REMOVED_TOKENmodel="stable-diffusion"
+        hf_model="stable-diffusion"
     )
     print(f"Status: {status}")
     if filename:
@@ -37,7 +37,7 @@ def test_huggingface():
         "a futuristic city", 
         use_stable_diffusion=False, 
         use_huggingface=True, 
-        REMOVED_TOKENmodel="openjourney"
+        hf_model="openjourney"
     )
     print(f"Status: {status2}")
     if filename2:

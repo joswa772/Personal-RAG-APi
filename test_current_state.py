@@ -15,7 +15,7 @@ def test_current_state():
         "a beautiful sunset", 
         use_sd=False, 
         use_hf=True, 
-        REMOVED_TOKENmodel="stable-diffusion"
+        hf_model="stable-diffusion"
     )
     print(f"Status: {status}")
     if filename:
@@ -34,7 +34,7 @@ def test_current_state():
         "generate an image of AI", 
         use_sd=False, 
         use_hf=True, 
-        REMOVED_TOKENmodel="stable-diffusion"
+        hf_model="stable-diffusion"
     )
     print(f"Status: {status2}")
     if filename2:

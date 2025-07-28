@@ -7,7 +7,6 @@ import os
 import requests
 
 def test_api_key():
-    api_key =  os.getenv("REMOVED_TOKENcrGqfPOzpxTvbOCzgTogEecwyKLJoyWJMM")
     
     print("🔑 Testing Hugging Face API Key...")
     print("=" * 50)
