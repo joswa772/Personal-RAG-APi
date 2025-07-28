@@ -1,5 +1,4 @@
 venv-fastapi/
 __pycache__/
-*.pyc
 .env
 test_api_key.py

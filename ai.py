@@ -30,6 +30,7 @@ import hashlib
 from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.vectorstores import Chroma
 import re
+from dotenv import load_dotenv
 
 # Download required NLTK resources
 try:
@@ -37,6 +38,9 @@ try:
     nltk.download("stopwords", quiet=True)
 except:
     print("Warning: Could not download NLTK resources. Some features may not work.")
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Global variables
 CLEANED_TEXT = ""
@@ -50,7 +54,7 @@ GENERATED_IMAGES = []
 # Built-in API key for Stable Diffusion
 # Replace "sk-your-api-key-here" with your actual Stability AI API key
 # Get your API key from: https://platform.stability.ai/
-STABLE_DIFFUSION_API_KEY = os.getenv("sk-xDpJbplSNgWOJrs8VybBodeGX4Gxt6q2dN1jlpXENFxgAXFX")
+STABLE_DIFFUSION_API_KEY = os.getenv("STABLE_DIFFUSION_API_KEY")
 
 # Hugging Face API key (optional, for higher rate limits)
 # Get your free API key from: https://huggingface.co/settings/tokens
@@ -240,7 +244,7 @@ def generate_image_stable_diffusion(prompt, api_key=None):
         api_key = STABLE_DIFFUSION_API_KEY
     
     # Check if API key is valid (not placeholder)
-    if not api_key or api_key == "sk-your-api-key-here" or len(api_key) < 50:
+    if not api_key or api_key == "sk-xDpJbplSNgWOJrs8VybBodeGX4Gxt6q2dN1jlpXENFxgAXFX" or len(api_key) < 50:
         return "Error: Please set your Stable Diffusion API key in the code. Replace the placeholder API key with your actual Stability AI API key from https://platform.stability.ai/"
     
     try:
@@ -713,4 +717,5 @@ def demo_usage():
     print("=" * 60)
 
 if __name__ == "__main__":
+    print("STABLE_DIFFUSION_API_KEY is set:", bool(STABLE_DIFFUSION_API_KEY))
     demo_usage()
