@@ -44,16 +44,19 @@ GENERATED_IMAGES = []
 # Replace "sk-your-api-key-here" with your actual Stability AI API key
 # Get your API key from: https://platform.stability.ai/
 STABLE_DIFFUSION_API_KEY = os.getenv("STABLE_DIFFUSION_API_KEY")
-OLLAMA_BASE_URL = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 # ============================================================================
 
 # ============================================================================
 # TEXT PROCESSING FUNCTIONS
 # ============================================================================
-response = requests.post(
-    f"{OLLAMA_BASE_URL}/api/generate",
-    json={"model": "llama3", "prompt": prompt}
-)
+def query_llama(prompt):
+    response = requests.post(
+        f"{OLLAMA_BASE_URL}/api/generate",
+        json={"model": "llama3", "prompt": prompt}
+    )
+    return response.json()
+
 
 def answer_question_chroma(question, use_llama3=False):
     """Answer question using ChromaDB vector search"""
