@@ -1,19 +1,19 @@
 @echo off
-cd /d "%~dp0"
+setlocal EnableDelayedExpansion
 
-echo 📁 In project folder: %cd%
-echo.
+:: Ask for commit message
+set /p commitmsg=📝 Enter commit message: 
 
-REM Ask for commit message
-set /p commitMsg=📝 Enter commit message: 
+echo 🔄 Pulling latest changes...
+git pull --rebase origin main
 
-echo 🔄 Adding all changes...
+echo 📂 Adding all changes...
 git add .
 
-echo ✅ Committing with message: "%commitMsg%"
-git commit -m "%commitMsg%"
+echo 🧠 Committing with message: "!commitmsg!"
+git commit -m "!commitmsg!"
 
-echo 🚀 Pushing to GitHub (main branch)...
+echo 🚀 Pushing to GitHub...
 git push origin main
 
 echo ✅ All done!
