@@ -23,7 +23,7 @@ import shutil
 from pathlib import Path
 import base64
 from typing import Optional
-
+from ai import query_llama
 # Import our backend functions
 from ai import (
     process_pdf, answer_question, generate_image_wrapper, 
@@ -85,6 +85,12 @@ HTML_TEMPLATE = """
 # ============================================================================
 # API ENDPOINTS
 # ============================================================================
+@app.post("/ask")
+def ask_question(data: dict):
+    prompt = data["prompt"]
+    result = query_llama(prompt)
+    return result
+
 @app.post("/ask-chroma")
 async def ask_chroma_endpoint(
     question: str = Form(...),
