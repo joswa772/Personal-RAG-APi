@@ -52,17 +52,12 @@ OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "https://ollama-cloud-production.
 # TEXT PROCESSING FUNCTIONS
 # ============================================================================
 def query_llama(prompt):
-    try:
-        response = requests.post(
-            f"{OLLAMA_BASE_URL}/api/generate",
-            json={"model": "llama3", "prompt": prompt}
-            timeout=30  # Add a timeout
-        )
-        response.raise_for_status()
-        return response.json()
-    except requests.exceptions.RequestException as e:
-        return {"error": f"Failed to connect to Ollama: {str(e)}"}
-
+    response = requests.post(
+        f"{OLLAMA_BASE_URL}/api/generate",
+        json={"model": "llama3", "prompt": prompt}
+        
+    )
+    return response.json()
 
 def answer_question_chroma(question, use_llama3=False):
     """Answer question using ChromaDB vector search"""
@@ -390,7 +385,7 @@ def generate_image_from_pdf_context(question, use_stable_diffusion=False, api_ke
 def test_ollama_connection():
     """Test if Ollama is running and accessible"""
     try:
-        response = requests.get("http://localhost:11434/api/tags", timeout=5)
+        response = requests.get(f"{OLLAMA_BASE_URL}/api/tags", timeout=5)
         if response.ok:
             models = response.json().get("models", [])
             return True, f"✅ Ollama is running. Available models: {len(models)}"
