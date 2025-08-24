@@ -52,11 +52,16 @@ OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "https://ollama-cloud-production.
 # TEXT PROCESSING FUNCTIONS
 # ============================================================================
 def query_llama(prompt):
-    response = requests.post(
-        f"{OLLAMA_BASE_URL}/api/generate",
-        json={"model": "llama3", "prompt": prompt}
-    )
-    return response.json()
+    try:
+        response = requests.post(
+            f"{OLLAMA_BASE_URL}/api/generate",
+            json={"model": "llama3", "prompt": prompt}
+            timeout=30  # Add a timeout
+        )
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        return {"error": f"Failed to connect to Ollama: {str(e)}"}
 
 
 def answer_question_chroma(question, use_llama3=False):
@@ -132,7 +137,7 @@ def ask_llama3(context, question):
     )
     try:
         response = requests.post(
-            "http://localhost:11434/api/generate",
+            f"{OLLAMA_BASE_URL}/api/generate",
             json={
                 "model": "llama3",
                 "prompt": prompt,
@@ -202,7 +207,7 @@ def generate_image_ollama(prompt, model="llava"):
     """Generate image using Ollama"""
     try:
         response = requests.post(
-            "http://localhost:11434/api/generate",
+            f"{OLLAMA_BASE_URL}/api/generate",
             json={
                 "model": model,
                 "prompt": f"Generate an image of: {prompt}",
